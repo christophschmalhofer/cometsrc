@@ -3,6 +3,7 @@ package comet.snippet
 import _root_.net.liftweb.util.Log
 import comet.model._
 import comet.model.TicTacToe._
+
 import _root_.net.liftweb.http.SHtml._
 import _root_.net.liftweb.http.S._
 import _root_.net.liftweb.http.js.JE._
@@ -17,7 +18,9 @@ class TicTacToeGame {
 
   def render = {
 
-    TicTacToe.init
+    // ticTacToe ist auch in der callback Closure
+    val ticTacToe = new TicTacToe()
+
     var lineIndex = -1
     
     def renderLine(l:Array[Who]): Node = {
@@ -50,7 +53,7 @@ class TicTacToeGame {
 
             var cmds = Noop
             for( l <- 0 to 2; c <- 0 to 2) {
-              val who = TicTacToe.getCellValue((l,c)).toString
+              val who = ticTacToe.getCellValue((l,c)).toString
               val renderWho = winner match {
                 case Some(triple) => if(partOfWinner((l,c), triple)) <span style="background-color:red"> { who } </span> else Text(who)
                 case None => Text(who)
@@ -61,11 +64,11 @@ class TicTacToeGame {
           }
           
           try {
-            TicTacToe.moveToPosition((currentLine, currentColumn), TicTacToe.who.You)
-            val myMove = TicTacToe.computeMove(TicTacToe.who.Me)
-            TicTacToe.checkGameOver()
-            SetHtml( idStr(), Text(TicTacToe.who.You.toString)) &
-            SetHtml( myMove._1.toString + myMove._2.toString, Text(TicTacToe.who.Me.toString)) &
+            ticTacToe.moveToPosition((currentLine, currentColumn), who.You)
+            val myMove = ticTacToe.computeMove(who.Me)
+            ticTacToe.checkGameOver()
+            SetHtml( idStr(), Text(who.You.toString)) &
+            SetHtml( myMove._1.toString + myMove._2.toString, Text(who.Me.toString)) &
             SetHtml( "moveFirst", Text(""))
           } catch {
             case ex: TicTacToe.GameOverException => { 
@@ -75,12 +78,12 @@ class TicTacToeGame {
           }
         }
 
-        def renderWho(who:Who):Node = {
-          if (who == TicTacToe.who.Empty) <span> { EntityRef("nbsp") ++ EntityRef("nbsp") ++ EntityRef("nbsp")} </span> else Text(who.toString) 
+        def renderWho(whoVal:Who):Node = {
+          if (whoVal == who.Empty) <span> { EntityRef("nbsp") ++ EntityRef("nbsp") ++ EntityRef("nbsp")} </span> else Text(who.toString) 
         }
 
         // eine Zelle einer Zeile
-        <td width="30" height="30">
+        <td width="40" height="30">
         <span id={idStr()}>
         {
           a(callback _, renderWho(cell))
@@ -101,16 +104,16 @@ class TicTacToeGame {
      {
        ajaxButton( Text("Setze zuerst"), () => 
          { 
-           val myMove = TicTacToe.computeMove(TicTacToe.who.Me); 
+           val myMove = ticTacToe.computeMove(who.Me); 
            CmdPair(
-             SetHtml( myMove._1.toString + myMove._2.toString, Text(TicTacToe.who.Me.toString)),
+             SetHtml( myMove._1.toString + myMove._2.toString, Text(who.Me.toString)),
              SetHtml( "moveFirst", Text("")))
          })
      }
     </span>
     <table border="1" style="font-size:300%;">
     { 
-      TicTacToe.master.map( l => renderLine(l)) 
+      ticTacToe.master.map( l => renderLine(l)) 
     }
     </table> 
     </div>
