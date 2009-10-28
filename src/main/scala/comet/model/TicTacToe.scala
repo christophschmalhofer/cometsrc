@@ -1,17 +1,11 @@
 package comet.model
 
-//TicTacToe in Konsole
-
-//Build: scalac -deprecation TicTacToe.scala
-//Run: scala TicTacToe star
-
 import java.util.Calendar;
 import _root_.net.liftweb.util.Log
 import TicTacToe._
 
 
 object TicTacToe {
-
   // wer hat in eine Zelle gesetzt
   // wer hat gewonnen
   object who extends Enumeration {
@@ -20,7 +14,6 @@ object TicTacToe {
     val You = Value("x");
     val Nobody = Value("Niemand");
   }
-
 
   type Who = who.Value
   type Position = (Int,Int)
@@ -34,7 +27,6 @@ object TicTacToe {
       val nextMove:Option[Position],
       val winnerTriple:Option[PositionTriple]
     ) extends Exception
-
 }
 
 class TicTacToe {

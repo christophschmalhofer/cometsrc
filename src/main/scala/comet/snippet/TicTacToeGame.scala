@@ -23,7 +23,6 @@ class TicTacToeGame {
 
   object ticTacToe extends SessionVar[TicTacToe](new TicTacToe())
 
-
   def reStart(input:NodeSeq):NodeSeq = {
     ajaxButton( Text("Neues Spiel"), () => 
       {
@@ -48,12 +47,9 @@ class TicTacToeGame {
 
       def renderCell(cell:Who):Node = { 
         columnIndex += 1
-
         // das sind Closure Variablen für callback
         val currentColumn = columnIndex
         val currentLine = lineIndex
-
-
 
         // das ist die Ajax Callback Methode (enthält die Spiellogik)
         def callback():JsCmd =  {
@@ -70,7 +66,6 @@ class TicTacToeGame {
             }
           }
         }
-
 
         // eine Zelle einer Zeile
         <td width="30" height="30">
@@ -107,8 +102,10 @@ class TicTacToeGame {
   }
 
   private def computeMove() {
+    // Zugriff auf Session noch im Snippet Thread
     val cometActor = ticTacToeActorInSession.is
     val theSession = S.session;
+
     actor { 
       theSession match {
         case Full(session) => {

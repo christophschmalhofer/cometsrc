@@ -1,9 +1,9 @@
 package bootstrap.liftweb
 
-import _root_.net.liftweb.util._
-import _root_.net.liftweb.http._
-import _root_.net.liftweb.sitemap._
-import _root_.net.liftweb.sitemap.Loc._
+import net.liftweb.util._
+import net.liftweb.http._
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
 import Helpers._
 import scala.actors._ 
 import TimeHelpers.intToTimeSpanBuilder
@@ -19,7 +19,6 @@ object RequestLogger {
 
 object SessionInfoDumper extends Actor {
     def act() {
-
       while (true) {
         receive {
           case info:Any => println( "SessionInfoDumper: " + info)
@@ -27,8 +26,6 @@ object SessionInfoDumper extends Actor {
       }
     }
 }
-
-
 
 class Boot {
 
@@ -44,22 +41,15 @@ class Boot {
 
     //S.addAnalyzer(RequestLogger.log _)
     
-    /*
-     * Show the spinny image when an Ajax call starts
-     */
     LiftRules.ajaxStart =
       Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
     
-    /*
-     * Make the spinny image go away when it ends
-     */
     LiftRules.ajaxEnd =
       Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
     
-    // Dump information about session every 10 minutes
+
     SessionMaster.sessionWatchers = SessionInfoDumper :: SessionMaster.sessionWatchers
   } 
-
 
   LogBoot.defaultProps =  
     """<?xml version="1.0" encoding="UTF-8" ?>  
