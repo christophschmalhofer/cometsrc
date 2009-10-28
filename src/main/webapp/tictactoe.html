@@ -1,5 +1,11 @@
 <lift:surround with="default" at="content">
-		<h2>Tic Tac Toe</h2>
-		<p><lift:TicTacToeGame/></p>
+  <h2>Tic Tac Toe</h2>
+  <div id="tictactoegame">
+    <lift:TicTacToeGame/>
+  </div>
+  <lift:comet type="TicTacToeActor" name="Other" />
+  <div>
+    <lift:TicTacToeGame.reStart/>
+  </div>  
 </lift:surround>
 

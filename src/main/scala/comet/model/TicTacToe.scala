@@ -40,11 +40,17 @@ object TicTacToe {
 class TicTacToe {
 
   //Spielfeld: 3x3 Array
-  val master = new Array[Array[Who]](3,3)
+  private val master = new Array[Array[Who]](3,3)
   for(l <- master; i <- 0 until l.length) {
     l(i) = who.Empty
   }
 
+  def getBoard():Array[Array[Who]] = clone(master)
+
+  private var lastMover = who.Empty
+
+  def getLastMover():Who = lastMover
+ 
   //Liste von Gewinnerpositionen
   private val winnerTriples = List[PositionTriple](
     //Zeilen
@@ -68,6 +74,7 @@ class TicTacToe {
     } 
   }
 
+  def gameJustStarted():Boolean =  emptyCells(master).length == master.length * master(0).length
   
   // Siegstellung oder Remis => GameOverException
   def checkGameOver() {
@@ -128,9 +135,9 @@ class TicTacToe {
 
     // player setzt in dem geklonten Spielstand in die Zelle cell 
     def cloneAndMoveAndCheckIsWinner(player:Who, cell:Position) { 
-      val clone = cloneField(field)
-      setWho(clone, cell, player)
-      checkIsWinner(Some(player), clone, cell)
+      val cloneVal = clone(field)
+      setWho(cloneVal, cell, player)
+      checkIsWinner(Some(player), cloneVal, cell)
     }
 
     // zuerst einfachen Siegeszug suchen
@@ -150,15 +157,15 @@ class TicTacToe {
 
     // indirekten Siegeszug suchen 
     for( myCell <-emptyCells(field)) {
-      val clone = cloneField(field)
-      setWho(clone, myCell, player)
+      val cloneVal = clone(field)
+      setWho(cloneVal, myCell, player)
       // gibt es für jeden gegnerischen Zug einen direkten Siegerzug
       // oder indirekten Siegerzug (mit Einschränkung: kein kürzerer Siegeszug des Gegners) 
       // handelt es sich um einen indirekten
       // Siegerzug
       var alwaysWinner = true
-      for( emptyCell <-emptyCells(clone)) {
-        val cloneClone = cloneField(clone)
+      for( emptyCell <-emptyCells(cloneVal)) {
+        val cloneClone = clone(cloneVal)
         setWho(cloneClone, emptyCell, getOtherPlayer(player))
         try {
           searchWinner(player, cloneClone)
@@ -176,7 +183,7 @@ class TicTacToe {
   }
   
   // liefert eine geklontes Spielfeld (Besetzung identisch zu Parameter field)
-  private def cloneField(field:Array[Array[Who]]):Array[Array[Who]] = { 
+  private def clone(field:Array[Array[Who]]):Array[Array[Who]] = { 
     return field.map( l => l.map( v => v))
   }
   
@@ -193,6 +200,10 @@ class TicTacToe {
   // player setzt in Zelle t
   private def setWho(field:Array[Array[Who]], position:Position, player:Who) {
     field(position._1)(position._2) = player
+    if (field eq master) {
+      lastMover = player
+      Log.info ("Last Mover: " + player)
+    }
   }
 
   def moveToPosition(position:Position, player:Who) {
@@ -204,10 +215,9 @@ class TicTacToe {
   // liefert freie Zellen
   private def emptyCells(field:Array[Array[Who]]):Seq[Position] = {
     for (
-      l <- 0 to 2; 
-      c <- 0 to 2
+      l <- 0 until master.length; 
+      c <- 0 until master(1).length
       if who.Empty.equals(field(l)(c))
     ) yield(l,c)
   }
-
 }
