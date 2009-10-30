@@ -16,7 +16,8 @@ import net.liftweb.http.js.JsCmd
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.http.js.JE.JsRaw
 
-import net.liftweb.util.{Full, Helpers, Log}
+import net.liftweb.util.{Full, Helpers, Log, HttpHelpers}
+import net.liftweb.util.Helpers._
 
 
 class TicTacToeGame {
@@ -58,8 +59,7 @@ class TicTacToeGame {
             ticTacToe.is.moveToPosition((currentLine, currentColumn), who.You)
             ticTacToe.is.checkGameOver()
             computeMove()
-            SetHtml("tictactoegame" , this.render()) &
-            SetHtml("statusline", Text("Computer rechnet"))
+            SetHtml("tictactoegame" , this.render())
           } catch {
             case ex: TicTacToe.GameOverException => { 
               displayResultBoard(ex) 
@@ -68,17 +68,12 @@ class TicTacToeGame {
         }
 
         // eine Zelle einer Zeile
-        <td width="30" height="30">
-        <span id={cellId(currentLine, currentColumn)}>
-        {
-          if (cell == who.Empty &&  ticTacToe.is.getLastMover != who.You) {
-            a(callback _, renderWho(cell))
-          } else {
-            renderWho(cell)
-          }
+        val td = <td width="30" height="30" id={cellId(currentLine, currentColumn)}>{ renderWho(cell)}</td>
+        if ( cell == who.Empty &&  ticTacToe.is.getLastMover != who.You) {
+          td % ("onclick" -> {ajaxInvoke(callback _)._2}) % ("style" -> "background-color:LightSkyBlue") % ("title" -> "click")
+        } else {
+          td
         }
-        </span>
-        </td> 
       }
       // eine Zeile des Bretts
       <tr> 
@@ -97,7 +92,8 @@ class TicTacToeGame {
     { 
       ticTacToe.is.getBoard().map( l => renderLine(l)) 
     }
-    </table> 
+    </table>
+    <p id="statusline" > { renderStatusLine() } </p>
     </div>
   }
 
@@ -120,7 +116,6 @@ class TicTacToeGame {
                 ticTacToe.is.checkGameOver()
                 val afterMove = this.render() 
                 cometActor ! afterMove
-                cometActor ! SetHtml("statusline", Text("Du bist am Zug"))
               } catch {
                 case ex: TicTacToe.GameOverException => { 
                   cometActor ! displayResultBoard(ex)
@@ -152,7 +147,7 @@ class TicTacToeGame {
   }
 
   private def renderWho(whoVal:Who):Node = {
-    if (whoVal == who.Empty) <span> { EntityRef("nbsp") ++ EntityRef("nbsp") ++ EntityRef("nbsp")} </span> else Text(whoVal.toString) 
+    if (whoVal == who.Empty) { EntityRef("nbsp")} else Text(whoVal.toString) 
   }
 
 
@@ -160,7 +155,6 @@ class TicTacToeGame {
   private def displayResultBoard(ex:GameOverException):JsCmd = {
     
     Log.info( ex.player + " hat gewonnen")
-    notice( ex.player + " hat gewonnen")
     
     def partOfWinner(p:Position, triple:PositionTriple):Boolean = {
       for(i <- 0 to 2; if(triple.productElement(i).equals(p))) {
@@ -178,9 +172,7 @@ class TicTacToeGame {
       }
       cmds.push(SetHtml(cellId(l,c), renderWhoVal) )
     } 
-    // siehe JsCmds: implicit def seqJsToJs(in : Seq[JsCmd])
-    cmds &
-    SetHtml("statusline", Text("Spiel zu Ende"))
+    cmds & SetHtml("statusline", renderStatusLine())
   }          
 
 
@@ -190,8 +182,24 @@ class TicTacToeGame {
     for( l <- 0 to 2; c <- 0 to 2) {
       cmds.push(SetHtml( cellId(l,c), renderWho(ticTacToe.is.getCellValue((l,c)))))
     } 
-    // siehe JsCmds: implicit def seqJsToJs(in : Seq[JsCmd])
-    cmds & SetHtml("statusline", Text("Computer rechnet"))
-  }          
+    //das Modell kann beim ersten Zug nicht wissen, dass der Computer dran ist
+    cmds & SetHtml("statusline", renderStatusLineForStatus(Status.MY_MOVE))
+  }
+
+  private def renderStatusLine():Node = {
+    renderStatusLineForStatus(ticTacToe.is.getStatus)
+  }
+
+  private def renderStatusLineForStatus(status:Status.Value):Node = {
+    status match {
+      case Status.FRESH => Text("Spiel kann beginnen")
+      case Status.MY_MOVE => Text("Computer rechnet")
+      case Status.YOUR_MOVE => Text("Du bist dran")
+      case Status.REMIS => Text("Spiel endet unentschieden")
+      case Status.AI_WON => Text("Du hast verloren")
+      case Status.YOU_WON => Text("Du hast gewonnen")
+    }
+  }
+
 }
 

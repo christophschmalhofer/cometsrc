@@ -15,6 +15,16 @@ object TicTacToe {
     val Nobody = Value("Niemand");
   }
 
+  object Status extends Enumeration {
+    val FRESH = Value
+    val MY_MOVE = Value
+    val YOUR_MOVE = Value
+    val AI_WON = Value
+    val YOU_WON = Value
+    val REMIS = Value
+  }
+
+
   type Who = who.Value
   type Position = (Int,Int)
   type PositionTriple = (Position,Position,Position)
@@ -40,6 +50,10 @@ class TicTacToe {
   def getBoard():Array[Array[Who]] = clone(master)
 
   private var lastMover = who.Empty
+
+  private var status = Status.FRESH
+
+  def getStatus():Status.Value = status
 
   def getLastMover():Who = lastMover
  
@@ -72,6 +86,7 @@ class TicTacToe {
   def checkGameOver() {
     checkIsWinner(None,master, (0,0))
     if (emptyCells(master).isEmpty) {
+      status = Status.REMIS
       throw new GameOverException(who.Nobody, None, None)
     }
   }
@@ -87,7 +102,11 @@ class TicTacToe {
     }
     
     winnerTriples.find(isWinner(_)) match {
-      case Some(triple) => throw new GameOverException(getWho(field, triple._1), Some(nextMove), Some(triple))
+      case Some(triple) => {
+        val winner = getWho(field, triple._1)
+        status = if(winner == who.Me) Status.AI_WON else Status.YOU_WON
+        throw new GameOverException(winner, Some(nextMove), Some(triple))
+      }
       case None => {}
     }
   }
@@ -192,6 +211,7 @@ class TicTacToe {
   // player setzt in Zelle t
   private def setWho(field:Array[Array[Who]], position:Position, player:Who) {
     field(position._1)(position._2) = player
+    status = if(player == who.Me) Status.YOUR_MOVE else Status.MY_MOVE
     if (field eq master) {
       lastMover = player
       Log.info ("Last Mover: " + player)
