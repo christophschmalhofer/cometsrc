@@ -214,7 +214,6 @@ class TicTacToe {
     status = if(player == who.Me) Status.YOUR_MOVE else Status.MY_MOVE
     if (field eq master) {
       lastMover = player
-      Log.info ("Last Mover: " + player)
     }
   }
 
@@ -223,6 +222,8 @@ class TicTacToe {
     setWho(master, position, player)
     checkGameOver()
   }
+
+  def gameOver:Boolean = status == Status.REMIS || status == Status.YOU_WON || status == Status.AI_WON
   
   // liefert freie Zellen
   private def emptyCells(field:Array[Array[Who]]):Seq[Position] = {

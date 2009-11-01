@@ -19,6 +19,11 @@ import net.liftweb.http.js.JE.JsRaw
 import net.liftweb.util.{Full, Helpers, Log, HttpHelpers}
 import net.liftweb.util.Helpers._
 
+import net.liftweb.http.js.JE
+import JE._
+import net.liftweb.http.js.jquery._ 
+import net.liftweb.http.js.jquery.JqJsCmds._
+import net.liftweb.http.js.jquery.JqJE._
 
 class TicTacToeGame {
 
@@ -69,8 +74,8 @@ class TicTacToeGame {
 
         // eine Zelle einer Zeile
         val td = <td width="30" height="30" id={cellId(currentLine, currentColumn)}>{ renderWho(cell)}</td>
-        if ( cell == who.Empty &&  ticTacToe.is.getLastMover != who.You) {
-          td % ("onclick" -> {ajaxInvoke(callback _)._2}) % ("style" -> "background-color:LightSkyBlue") % ("title" -> "click")
+        if ( cell == who.Empty &&  ticTacToe.is.getLastMover != who.You && ! ticTacToe.is.gameOver) {
+          td % ("onclick" -> {ajaxInvoke(callback _)._2}) % ("style" -> "background-color:LightSkyBlue;cursor: crosshair") % ("title" -> "click")
         } else {
           td
         }
@@ -98,8 +103,7 @@ class TicTacToeGame {
   }
 
   private def computeMove() {
-    // Zugriff auf Session noch im Snippet Thread
-    val cometActor = ticTacToeActorInSession.is
+    // session access in snippet thread (otherwise -> session not found)
     val theSession = S.session;
 
     actor { 
@@ -107,10 +111,9 @@ class TicTacToeGame {
         case Full(session) => {
           S.initIfUninitted(session) {
             S.functionLifespan(true) {
-
-
               Log.info("Long Computation")
               Thread.sleep(4000);
+              val cometActor = ticTacToeActorInSession.is
               try {
                 ticTacToe.is.computeMove(who.Me);
                 ticTacToe.is.checkGameOver()
@@ -121,7 +124,6 @@ class TicTacToeGame {
                   cometActor ! displayResultBoard(ex)
                 }
               }
-
               if (S.functionMap.size > 0) {
                 session.updateFunctionMap(S.functionMap, Helpers.nextFuncName, Helpers.nextNum)
                 S.clearFunctionMap
@@ -129,7 +131,7 @@ class TicTacToeGame {
             }
           }
         }
-        case  _ => { Log.info("Session nicht vorhanden")}
+        case  _ => { Log.info("session not found")}
       }
     }
   }
@@ -138,7 +140,7 @@ class TicTacToeGame {
     if (ticTacToe.is.gameJustStarted()) {
       <span id="moveFirst"> 
       {
-        ajaxButton( Text("Setze zuerst"), () => { computeMove(); displayBoardReadOnly()})
+        ajaxButton( Text("Computer setzt zuerst"), () => { computeMove(); displayBoardReadOnly()})
       }
       </span>
     } else {
@@ -166,11 +168,18 @@ class TicTacToeGame {
     val cmds = new collection.mutable.Stack[JsCmd]
     for( l <- 0 to 2; c <- 0 to 2) {
       val who = ticTacToe.is.getCellValue((l,c))
-      val renderWhoVal = ex.winnerTriple match {
-        case Some(triple) => if(partOfWinner((l,c), triple)) <span style="background-color:red"> { who } </span> else renderWho(who)
-        case None => renderWho(who)
+      val noOnclickCmd = JqId(JE.Str(cellId(l,c))) >> JqHtml(renderWho(ticTacToe.is.getCellValue((l,c)))) >> JqAttr("onclick", "")
+      val cmd = ex.winnerTriple match {
+        case Some(triple) => {
+          if(partOfWinner((l,c), triple)) {
+            noOnclickCmd  >> JqAttr("style", "background-color: red") 
+          } else {
+            noOnclickCmd >> JqAttr("style", "") 
+          }
+        }
+        case None => noOnclickCmd 
       }
-      cmds.push(SetHtml(cellId(l,c), renderWhoVal) )
+      cmds.push(cmd)
     } 
     cmds & SetHtml("statusline", renderStatusLine())
   }          
@@ -180,7 +189,8 @@ class TicTacToeGame {
   private def displayBoardReadOnly():JsCmd = {
     val cmds = new collection.mutable.Stack[JsCmd]
     for( l <- 0 to 2; c <- 0 to 2) {
-      cmds.push(SetHtml( cellId(l,c), renderWho(ticTacToe.is.getCellValue((l,c)))))
+      val updateCellCmd = JqId(JE.Str(cellId(l,c))) >> JqHtml(renderWho(ticTacToe.is.getCellValue((l,c)))) >> JqAttr("onclick", "") >> JqAttr("style", "")
+      cmds.push(updateCellCmd)
     } 
     //das Modell kann beim ersten Zug nicht wissen, dass der Computer dran ist
     cmds & SetHtml("statusline", renderStatusLineForStatus(Status.MY_MOVE))
