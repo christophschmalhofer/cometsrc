@@ -6,11 +6,11 @@ import scala.xml.{Node,NodeSeq,Text,EntityRef}
 import model.TicTacToe
 import model.TicTacToe._
 import comet.TicTacToeActor
-import comet.TicTacToeActor._
+import TicTacToeActor._
 
 import net.liftweb.http.{S, StatefulSnippet, SessionVar}
 import net.liftweb.http.SHtml._
-import net.liftweb.http.S._
+import S._
 
 import net.liftweb.http.js.JsCmd
 import net.liftweb.http.js.JsCmds._
@@ -177,7 +177,7 @@ class TicTacToeGame {
             noOnclickCmd >> JqAttr("style", "") 
           }
         }
-        case None => noOnclickCmd 
+        case None => noOnclickCmd >> JqAttr("style", "") 
       }
       cmds.push(cmd)
     } 
